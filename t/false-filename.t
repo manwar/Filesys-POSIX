@@ -13,9 +13,11 @@ use Filesys::POSIX::Real::Inode ();       # required
 use Filesys::POSIX::Real::Directory ();
 
 use Test::More tests => 1;
-use File::Temp 'mkdtemp';
-my $tmpdir = mkdtemp('/tmp/.filesys-posix-XXXXXX') or die $!;
-for (qw(0 1 2 3 4 5 6 7 8 9 0)) {
+use File::Temp ();
+
+my $tmpdir = File::Temp::tempdir( 'CLEANUP' => 1 ) or die "$!";
+
+for (qw(0 1 2 3 4 5 6 7 8 9)) {
     _touch( $tmpdir . '/' . $_ );
 }
 

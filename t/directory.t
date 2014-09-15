@@ -15,13 +15,13 @@ use Filesys::POSIX::Extensions ();
 use Filesys::POSIX::Directory  ();
 use Filesys::POSIX::Bits;
 
-use File::Temp qw(mkdtemp);
+use File::Temp ();
 
 use Test::More ( 'tests' => 18 );
 use Test::Exception;
 use Test::NoWarnings;
 
-my $tmpdir = mkdtemp('/tmp/.filesys-posix-XXXXXX') or die $!;
+my $tmpdir = File::Temp::tempdir( 'CLEANUP' => 1 ) or die "$!";
 
 my %mounts = (
     '/mnt/mem' => {
@@ -130,5 +130,3 @@ foreach my $mountpoint ( sort keys %mounts ) {
         qr/^Not implemented/, "Filesys::POSIX::Directory->$_() throws 'Not implemented'";
     }
 }
-
-system qw/rm -rf/, $tmpdir;
