@@ -1,4 +1,3 @@
-#!/usr/bin/perl
 # Copyright (c) 2014, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
@@ -11,7 +10,7 @@ use warnings;
 use autodie;
 
 use Test::More ( 'tests' => 9 );
-use File::Temp;
+use File::Temp ();
 
 use lib "lib";
 use ExtUtils::testlib;
