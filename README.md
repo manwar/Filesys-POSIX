@@ -53,8 +53,10 @@ interface specified within.
 
 # ERROR HANDLING
 
-Errors are emitted in the form of exceptions thrown by `Carp::confess()`, with
-full stack traces.
+Errors are emitted in the form of exceptions thrown by
+[`Carp::confess()`](https://metacpan.org/pod/Carp#confess), with full stack traces.  Where possible,
+[`$!`](https://metacpan.org/pod/perlvar#pod) is set with an appropriate error code from [Errno](https://metacpan.org/pod/Errno), and a
+stringified [`$!`](https://metacpan.org/pod/perlvar#pod) is thrown.
 
 # SYSTEM CALLS
 
@@ -91,16 +93,16 @@ full stack traces.
 
     Change the current working directory to the path specified.  An
     `$fs->stat()` call will be used internally to lookup the inode for that
-    path; an exception "Not a directory" will be thrown unless the inode found is a
-    directory.  The internal current working directory pointer will be updated with
-    the directory inode found; this same inode will also be returned.
+    path; an ENOTDIR will be thrown unless the inode found is a directory.  The
+    internal current working directory pointer will be updated with the directory
+    inode found; this same inode will also be returned.
 
 - `$fs->fchdir($fd)`
 
     When passed a file descriptor for a directory, update the internal pointer to
     the current working directory to that directory resolved from the file
     descriptor table, and return the same directory inode.  If the inode is not a
-    directory, an exception "Not a directory" will be thrown.
+    directory, an ENOTDIR will be thrown.
 
 - `$fs->chown($path, $uid, $gid)`
 
@@ -131,9 +133,9 @@ full stack traces.
 
     Create a new directory at the path specified, applying the permissions field in
     the mode value specified.  If no mode is specified, the default permissions of
-    _0777_ will be modified by the current umask value.  A "Not a directory"
-    exception will be thrown in case the intended parent of the directory to be
-    created is not actually a directory itself.
+    _0777_ will be modified by the current umask value.  An ENOTDIR exception will
+    be thrown in case the intended parent of the directory to be created is not
+    actually a directory itself.
 
     A reference to the newly-created directory inode will be returned.
 
@@ -155,17 +157,17 @@ full stack traces.
 
     Exceptions thrown:
 
-    - Cross-device link
+    - EXDEV (Cross-device link)
 
         The inode resolved for the link source is not associated with the same device
         as the inode of the destination's parent directory.
 
-    - Is a directory
+    - EISDIR (Is a directory)
 
         Thrown if the source inode is a directory.  Hard links can only be made for
         non-directory inodes.
 
-    - File exists
+    - EEXIST (File exists)
 
         Thrown if an entry at the destination path already exists.
 
@@ -173,15 +175,15 @@ full stack traces.
 
     The path in the first argument specified, `$old`, is cleaned up using
     `Filesys::POSIX::Path->full`, and stored in a new symlink inode created
-    in the location specified by `$new`.  An exception will be thrown if an inode
-    at the path indicated by `$new` exists.  A reference to the newly-created
+    in the location specified by `$new`.  An EEXIST exception will be thrown if an
+    inode at the path indicated by `$new` exists.  A reference to the newly-created
     symlink inode will be returned.
 
 - `$fs->readlink($path)`
 
     Using `$fs->lstat()` to resolve the given path for an inode, the symlink
-    destination path associated with the inode is returned as a string.  A "Not a
-    symlink" exception is thrown unless the inode found is indeed a symlink.
+    destination path associated with the inode is returned as a string.  An EINVAL
+    exception is thrown unless the inode found is indeed a symlink.
 
 - `$fs->unlink($path)`
 
@@ -189,12 +191,12 @@ full stack traces.
     said inode will be removed from its parent directory entry.  The following
     exceptions will be thrown in the event of certain errors:
 
-    - No such file or directory
+    - ENOENT (No such file or directory)
 
         No entry was found in the path's parent directory for the item specified in the
         path.
 
-    - Is a directory
+    - EISDIR (Is a directory)
 
         `$fs->unlink()` was called with a directory specified.
         `$fs->rmdir()` must be used instead for removing directory inodes.
@@ -220,27 +222,27 @@ full stack traces.
 
     The following exceptions are thrown for error conditions:
 
-    - Operation not permitted
+    - EPERM (Operation not permitted)
 
         Currently, `$fs->rename()` cannot operate if the inode at the old location
         is an inode associated with a Filesys::POSIX::Real filesystem type.
 
-    - Cross-device link
+    - EXDEV (Cross-device link)
 
         The inode at the old path does not exist on the same filesystem device as the
         inode of the parent directory specified in the new path.
 
-    - Not a directory
+    - ENOTDIR (Not a directory)
 
         The old inode is a directory, but an existing inode found in the new path
         specified, is not.
 
-    - Is a directory
+    - EISDIR (Is a directory)
 
         The old inode is not a directory, but an existing inode found in the new path
         specified, is.
 
-    - Directory not empty
+    - ENOTEMPTY (Directory not empty)
 
         Both the old and new paths correspond to a directory, but the new path is not
         of an empty directory.
@@ -252,20 +254,20 @@ full stack traces.
     Unlinks the directory inode at the specified path.  Exceptions are thrown in
     the following conditions:
 
-    - No such file or directory
+    - ENOENT (No such file or directory)
 
         No inode exists by the name specified in the final component of the path in
         the parent directory specified in the path.
 
-    - Device or resource busy
+    - EBUSY (Device or resource busy)
 
         The directory specified is an active mount point.
 
-    - Not a directory
+    - ENOTDIR (Not a directory)
 
         The inode found at `$path` is not a directory.
 
-    - Directory not empty
+    - ENOTEMPTY (Directory not empty)
 
         The directory is not empty.
 
@@ -341,6 +343,11 @@ full stack traces.
 
     Lists the requirements for writing modules that act as inodes.
 
+- [Filesys::POSIX::Module](https://metacpan.org/pod/Filesys::POSIX::Module)
+
+    Provides an interface for loading methods from modules that extend
+    Filesys::POSIX.
+
 # INTERNALS
 
 - [Filesys::POSIX::Bits](https://metacpan.org/pod/Filesys::POSIX::Bits)
@@ -370,3 +377,17 @@ full stack traces.
 
     Used by Filesys::POSIX, this module provides an implementation of a filesystem
     mount table and VFS inode resolution routines.
+
+# AUTHOR
+
+Written by Xan Tronix <xan@cpan.org>
+
+# CONTRIBUTORS
+
+- Rikus Goodell <rikus.goodell@cpanel.net>
+- Brian Carlson <brian.carlson@cpanel.net>
+
+# COPYRIGHT
+
+Copyright (c) 2014, cPanel, Inc.  Distributed under the terms of the Perl
+Artistic license.

@@ -788,6 +788,11 @@ Lists the requirements for writing modules that act as directory structures.
 
 Lists the requirements for writing modules that act as inodes.
 
+=item L<Filesys::POSIX::Module>
+
+Provides an interface for loading methods from modules that extend
+Filesys::POSIX.
+
 =back
 
 =head1 INTERNALS
