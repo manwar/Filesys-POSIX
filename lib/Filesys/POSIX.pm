@@ -24,12 +24,7 @@ use Filesys::POSIX::Error qw(throw);
 
 use Carp qw(confess);
 
-our $AUTOLOAD;
-
-BEGIN {
-    use Exporter ();
-    our $VERSION = '0.9.14';
-}
+our $VERSION = '0.9.14';
 
 =head1 NAME
 
