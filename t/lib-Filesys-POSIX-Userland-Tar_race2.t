@@ -10,7 +10,7 @@ use strict;
 use warnings;
 use autodie;
 
-use Test::More tests => 9;
+use Test::More ( 'tests' => 9 );
 use File::Temp;
 
 use lib "lib";
@@ -149,6 +149,7 @@ sub execute_single_test {
     open my $tar_fh, ">", "$dir/test.tar";
     my $handle = Filesys::POSIX::IO::Handle->new($tar_fh);
     $fs->tar( $handle, "/mapped_dir/file.txt" );
+    $handle->close;
 
     $args->{checker}->( $dir, \@warnings ) if ref $args->{checker} eq 'CODE';
 }

@@ -17,6 +17,7 @@ use Filesys::POSIX::Path                  ();
 use Filesys::POSIX::Userland::Find        ();
 use Filesys::POSIX::Userland::Tar::Header ();
 
+use Errno;
 use Carp ();
 
 my @METHODS = qw(tar);
@@ -64,7 +65,7 @@ archival.
 =cut
 
 our $BLOCK_SIZE = 512;
-our $BUF_MAX    = 4096;
+our $BUF_MAX    = 20 * $BLOCK_SIZE;
 
 #
 # NOTE: I'm only using $inode->open() calls to avoid having to call stat().
@@ -73,9 +74,11 @@ our $BUF_MAX    = 4096;
 sub _write_file {
     my ( $fh, $inode, $handle, $size ) = @_;
 
+    my $total           = 0;
     my $actual_file_len = 0;
 
     my $premature_eof;
+
     do {
         my $max_read = $size - $actual_file_len;
         $max_read = $BUF_MAX if $max_read > $BUF_MAX;
@@ -128,18 +131,25 @@ sub _write_file {
             $buf .= "\x0" x $padlen;
         }
 
-        if ( ( my $written = $handle->write( $buf, $len ) ) != $len ) {
+        my $written = 0;
+
+        if ( ( $written = $handle->write( $buf, $len ) ) != $len ) {
             Carp::confess("Short write while dumping file buffer to handle. Expected to write $len bytes, but only wrote $written.");
         }
 
         $actual_file_len += $real_len;
+        $total           += $written;
     } while ( $actual_file_len < $size );
 
     $fh->close;
+
+    return $total;
 }
 
 sub _archive {
     my ( $inode, $handle, $path, $opts ) = @_;
+
+    my $written = 0;
 
     my $header = Filesys::POSIX::Userland::Tar::Header->from_inode( $inode, $path );
     my $blocks = '';
@@ -157,26 +167,30 @@ sub _archive {
     eval {
         # Acquire the file handle before writing the header so we don't corrupt
         # the tarball if the file is missing.
-        my $len = length $blocks;
+        my $header_len = length $blocks;
 
-        unless ( $handle->write( $blocks, $len ) == $len ) {
+        unless ( $handle->write( $blocks, $header_len ) == $header_len ) {
             Carp::confess('Short write while dumping tar header to file handle');
         }
 
         if ( $inode->file && $header->{'size'} > 0 ) {
             my $fh = $inode->open( $O_RDONLY | $O_NONBLOCK );    # Case 82969: No block on pipes
 
-            _write_file( $fh, $inode, $handle, $header->{'size'} );
+            $written += _write_file( $fh, $inode, $handle, $header->{'size'} );
         }
+
+        $written += $header_len;
     };
 
-    if ($@) {
-        if ( !$opts->{'ignore_missing'} || $@ !~ /No such file or directory/ ) {
+    if ($!) {
+        if ( !$opts->{'ignore_missing'} || $! != &Errno::ENOENT ) {
             die $@;
         }
         $opts->{'ignore_missing'}->($path)
           if ref $opts->{'ignore_missing'} eq 'CODE';
     }
+
+    return $written;
 }
 
 =item C<$fs-E<gt>tar($handle, @items)>
@@ -213,10 +227,11 @@ that function with the name of the missing file.
 =cut
 
 sub tar {
-    my $self   = shift;
-    my $handle = shift;
-    my $opts   = ref $_[0] eq 'HASH' ? shift : {};
-    my @items  = @_;
+    my $self     = shift;
+    my $handle   = shift;
+    my $opts     = ref $_[0] eq 'HASH' ? shift : {};
+    my @items    = @_;
+    my $unpadded = 0;
 
     $self->find(
         sub {
@@ -224,11 +239,17 @@ sub tar {
 
             return if $inode->sock;
 
-            _archive( $inode, $handle, $path->full, $opts );
+            $unpadded += _archive( $inode, $handle, $path->full, $opts );
+            $unpadded %= $BUF_MAX;
         },
         $opts,
         @items
     );
+
+    my $padlen = $BUF_MAX - ( $unpadded % $BUF_MAX );
+    $handle->write( "\x00" x $padlen, $padlen );
+
+    return;
 }
 
 =back
