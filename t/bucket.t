@@ -43,7 +43,7 @@ use Test::NoWarnings;
     }
     &Errno::EALREADY, "Filesys::POSIX::Mem::Bucket->_flush_to_disk() cannot be repeated";
 
-    my ( $file, $handle ) = @{$bucket}{qw/file fh/};
+    my ( $file, $handle ) = @{$bucket}{qw(file fh)};
 
     ok(
         -f $file,
@@ -127,7 +127,7 @@ use Test::NoWarnings;
 
     $bucket->write( 'foo', 3 );
 
-    my ( $file, $handle ) = @{$bucket}{qw/file fh/};
+    my ( $file, $handle ) = @{$bucket}{qw(file fh)};
     undef $bucket;
 
     ok(
@@ -150,7 +150,7 @@ use Test::NoWarnings;
 
     $bucket->write( 'foo', 3 );
 
-    my ( $file, $handle ) = @{$bucket}{qw/file fh/};
+    my ( $file, $handle ) = @{$bucket}{qw(file fh)};
 
     undef $bucket->{'file'};
     $bucket->close;
@@ -177,7 +177,7 @@ use Test::NoWarnings;
 
     $bucket->write( 'foo', 3 );
 
-    my ( $file, $handle ) = @{$bucket}{qw/file fh/};
+    my ( $file, $handle ) = @{$bucket}{qw(file fh)};
 
     $bucket->close;
     unlink($file);

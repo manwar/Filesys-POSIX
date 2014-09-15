@@ -16,7 +16,7 @@ use Filesys::POSIX::Path   ();
 
 use Filesys::POSIX::Error qw(throw);
 
-use Carp qw/confess/;
+use Carp qw(confess);
 
 my @METHODS = qw(mount unmount statfs fstatfs mountlist);
 

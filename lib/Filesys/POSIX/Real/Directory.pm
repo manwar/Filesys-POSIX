@@ -131,7 +131,7 @@ sub delete {
     }
 
     my $now = time;
-    @{ $self->{'inode'} }{qw/mtime ctime/} = ( $now, $now );
+    @{ $self->{'inode'} }{qw(mtime ctime)} = ( $now, $now );
 
     my $inode = $self->{'members'}->{$name};
     delete $self->{'members'}->{$name};

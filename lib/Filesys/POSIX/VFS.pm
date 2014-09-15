@@ -140,7 +140,7 @@ sub vnode {
         $inode->{'mode'} &= ~$S_ISUID;
     }
 
-    foreach (qw/uid gid/) {
+    foreach (qw(uid gid)) {
         if ( defined $mount->{'flags'}->{$_} ) {
             $inode->{$_} = $mount->{'flags'}->{$_};
         }

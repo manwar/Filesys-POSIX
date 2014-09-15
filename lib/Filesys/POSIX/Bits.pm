@@ -12,11 +12,11 @@ use warnings;
 
 BEGIN {
     use Exporter ();
-    use vars qw/@ISA @EXPORT/;
+    use vars qw(@ISA @EXPORT);
 
-    @ISA = qw/Exporter/;
+    our @ISA = qw(Exporter);
 
-    @EXPORT = qw(
+    our @EXPORT = qw(
       $O_RDONLY $O_WRONLY $O_RDWR $O_NONBLOCK $O_APPEND $O_CREAT $O_TRUNC
       $O_EXCL $O_SHLOCK $O_EXLOCK $O_NOFOLLOW $O_EVTONLY $S_IFMT
       $S_IFIFO $S_IFCHR $S_IFDIR $S_IFBLK $S_IFREG $S_IFLNK $S_IFSOCK

@@ -22,7 +22,7 @@ use Filesys::POSIX::Userland ();
 
 use Filesys::POSIX::Error qw(throw);
 
-use Carp qw/confess/;
+use Carp qw(confess);
 
 our $AUTOLOAD;
 

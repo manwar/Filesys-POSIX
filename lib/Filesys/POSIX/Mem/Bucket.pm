@@ -113,7 +113,7 @@ sub _flush_to_disk {
         $offset += $wrlen;
     }
 
-    @{$self}{qw/fh file/} = ( $fh, $file );
+    @{$self}{qw(fh file)} = ( $fh, $file );
 }
 
 sub write {

@@ -10,7 +10,7 @@ package Filesys::POSIX::Directory;
 use strict;
 use warnings;
 
-use Carp qw/confess/;
+use Carp qw(confess);
 
 =head1 NAME
 

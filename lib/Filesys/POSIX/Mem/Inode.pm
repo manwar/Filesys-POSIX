@@ -66,7 +66,7 @@ sub child {
 
 sub chown {
     my ( $self, $uid, $gid ) = @_;
-    @{$self}{qw/uid gid/} = ( $uid, $gid );
+    @{$self}{qw(uid gid)} = ( $uid, $gid );
 }
 
 sub chmod {

@@ -14,7 +14,7 @@ use Filesys::POSIX::Bits;
 use Filesys::POSIX::Module ();
 use Filesys::POSIX::Path   ();
 
-use Carp qw/confess/;
+use Carp qw(confess);
 
 my @METHODS = qw(
   _find_inode_path mkpath getcwd realpath opendir readdir closedir touch

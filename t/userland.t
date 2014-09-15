@@ -17,7 +17,7 @@ use Test::NoWarnings;
 
 my $fs = Filesys::POSIX->new( Filesys::POSIX::Mem->new );
 
-my @parts = qw/foo bar baz/;
+my @parts = qw(foo bar baz);
 my @cur;
 my $path = join( '/', @parts );
 

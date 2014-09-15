@@ -11,7 +11,7 @@ use warnings;
 use Filesys::POSIX::IO::Handle ();
 use Filesys::POSIX::Bits;
 
-use File::Temp qw/mkstemp/;
+use File::Temp qw(mkstemp);
 
 use Test::More ( 'tests' => 11 );
 use Test::NoWarnings;

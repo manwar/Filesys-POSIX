@@ -19,7 +19,7 @@ use Filesys::POSIX::Error qw(throw);
 
 use Fcntl qw(:DEFAULT :mode);
 
-our @ISA = qw/Filesys::POSIX::Inode/;
+our @ISA = qw(Filesys::POSIX::Inode);
 
 sub new {
     my ( $class, $path, %opts ) = @_;
@@ -115,7 +115,7 @@ sub update {
     my ( $self, @st ) = @_;
 
     if ( $self->{'sticky'} && $self->{'dirty'} ) {
-        @{$self}{qw/rdev size atime mtime ctime/} = @st[ 6 .. 10 ];
+        @{$self}{qw(rdev size atime mtime ctime)} = @st[ 6 .. 10 ];
     }
     else {
         $self->SUPER::update(@st);
@@ -142,7 +142,7 @@ sub chown {
         CORE::chown( $uid, $gid, $self->{'path'} ) or Carp::confess("$!");
     }
 
-    @{$self}{qw/uid gid/} = ( $uid, $gid );
+    @{$self}{qw(uid gid)} = ( $uid, $gid );
 
     return $self->taint;
 }

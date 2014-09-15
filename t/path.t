@@ -48,21 +48,21 @@ my %TEST_DATA = (
         'full'     => '/foo/bar/baz',
         'dirname'  => '/foo/bar',
         'basename' => 'baz',
-        'parts'    => [ '', qw/foo bar baz/ ]
+        'parts'    => [ '', qw(foo bar baz) ]
     },
 
     'foo/bar/baz' => {
         'full'     => 'foo/bar/baz',
         'dirname'  => 'foo/bar',
         'basename' => 'baz',
-        'parts'    => [qw/foo bar baz/]
+        'parts'    => [qw(foo bar baz)]
     },
 
     '../foo/bar' => {
         'full'     => '../foo/bar',
         'dirname'  => '../foo',
         'basename' => 'bar',
-        'parts'    => [qw/.. foo bar/]
+        'parts'    => [qw(.. foo bar)]
     },
 
     '///borked' => {
@@ -83,14 +83,14 @@ my %TEST_DATA = (
         'full'     => 'foo/../bar',
         'basename' => 'bar',
         'dirname'  => 'foo/..',
-        'parts'    => [qw/foo .. bar/]
+        'parts'    => [qw(foo .. bar)]
     },
 
     './foo/../bar' => {
         'full'     => './foo/../bar',
         'basename' => 'bar',
         'dirname'  => './foo/..',
-        'parts'    => [qw/. foo .. bar/]
+        'parts'    => [qw(. foo .. bar)]
     },
 );
 

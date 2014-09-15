@@ -89,7 +89,7 @@ $fs->close($fd);
 # Test tar()'s output with the system tar(1).
 #
 {
-    my $tar_pid = open3( my ( $in, $out, $error ), qw/tar tf -/ )
+    my $tar_pid = open3( my ( $in, $out, $error ), qw(tar tf -) )
       or die("Unable to spawn tar: $!");
     my $pid = fork;
 
@@ -143,7 +143,7 @@ $fs->close($fd);
         'noatime' => 1
     );
 
-    my $tar_pid = open3( my ( $in, $out ), undef, qw/tar tf -/ )
+    my $tar_pid = open3( my ( $in, $out ), undef, qw(tar tf -) )
       or die("Unable to spawn tar: $!");
 
     my $pid = fork();

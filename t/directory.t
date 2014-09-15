@@ -15,7 +15,7 @@ use Filesys::POSIX::Extensions ();
 use Filesys::POSIX::Directory  ();
 use Filesys::POSIX::Bits;
 
-use File::Temp qw/mkdtemp/;
+use File::Temp qw(mkdtemp);
 
 use Test::More ( 'tests' => 18 );
 use Test::Exception;
@@ -123,7 +123,7 @@ foreach my $mountpoint ( sort keys %mounts ) {
 {
     my $directory = bless {}, 'Filesys::POSIX::Directory';
 
-    foreach (qw/get set exists detach delete list count open rewind read close/) {
+    foreach (qw(get set exists detach delete list count open rewind read close)) {
         throws_ok {
             $directory->$_();
         }

@@ -12,7 +12,7 @@ use warnings;
 
 use Filesys::POSIX::Directory ();
 
-our @ISA = qw/Filesys::POSIX::Directory/;
+our @ISA = qw(Filesys::POSIX::Directory);
 
 sub new {
     my ( $class, %initial ) = @_;
