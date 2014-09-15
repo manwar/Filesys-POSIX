@@ -56,6 +56,7 @@ t/real.t
 t/snapshot.t
 t/stat.t
 t/tar-missing.t
+t/lib-Filesys-POSIX-Userland-Tar_race2.t
 t/tar.t
 t/test.t
 t/umask.t
