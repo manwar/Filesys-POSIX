@@ -74,76 +74,49 @@ our $BUF_MAX    = 20 * $BLOCK_SIZE;
 sub _write_file {
     my ( $fh, $inode, $handle, $size ) = @_;
 
-    my $total           = 0;
-    my $actual_file_len = 0;
+    my $total_written = 0;
+    my $remaining     = $size;
+    my $modulo        = $size % $BLOCK_SIZE;
+    my $padding       = $modulo ? $BLOCK_SIZE - $modulo : 0;
 
-    my $premature_eof;
+    while ($remaining) {
+        my $readlen;
+        my $writelen;
+        my $buf;
 
-    do {
-        my $max_read = $size - $actual_file_len;
-        $max_read = $BUF_MAX if $max_read > $BUF_MAX;
+        my $wanted = ( $remaining >= $BUF_MAX ) ? $BUF_MAX : $remaining;
 
-        my ( $len, $real_len, $buf );
-        if ($premature_eof) {    # If we reach EOF before the expected length, pad with null bytes
-            $len = $real_len = $max_read;
-            $buf = "\x0" x $max_read;
-        }
-        else {
-            $buf      = '';
-            $real_len = 0;
-            my $amt_read;
-
-            # Attempt to read a total of $max_read bytes per buffer. ($max_read is either the
-            # maximum buffer size or the number of bytes expected remaining in the file, whichever
-            # is smaller.)
-            #
-            # Possible outcomes:
-            #
-            #   1. We received no bytes, in which case we have reached EOF unexpectedly.
-            #      Produce a warning and set the flag to pad the remaining portion of the
-            #      file with null bytes.
-            #   2. We received exactly $max_read bytes. This is good and means we can drop out of
-            #      this sub-loop after a single iteration per read loop iteration. (Should be the
-            #      most common case.)
-            #   3. We received some bytes, but not as many as we expected. Retry the read,
-            #      accumulating bytes until we either have a total of $max_read bytes for
-            #      this block or we reach EOF.
-            do {
-                my $incremental_buf;
-                $amt_read = $fh->read( $incremental_buf, $max_read - $real_len );
-                $buf .= $incremental_buf;
-                $real_len += $amt_read;
-
-                if ( $amt_read <= 0 && $max_read - $real_len > 0 ) {
-                    $premature_eof = 1;
-                    warn sprintf(
-                        'WARNING: Short read while archiving file (expected total of %d bytes, but only got %d); padding with null bytes...',
-                        $size, $actual_file_len + $real_len,
-                    );
-                }
-            } while ( $real_len < $max_read && $amt_read > 0 );
-
-            $len = $real_len;
+        if ( ( $readlen = $fh->read( $buf, $wanted ) ) <= 0 ) {
+            last;
         }
 
-        if ( ( my $padlen = $BLOCK_SIZE - ( $len % $BLOCK_SIZE ) ) != $BLOCK_SIZE ) {
-            $len += $padlen;
-            $buf .= "\x0" x $padlen;
+        if ( ( $writelen = $handle->write( $buf, $readlen ) ) < $readlen ) {
+            last;
         }
 
-        my $written = 0;
+        $total_written += $writelen;
+        $remaining -= $writelen;
+    }
 
-        if ( ( $written = $handle->write( $buf, $len ) ) != $len ) {
-            Carp::confess("Short write while dumping file buffer to handle. Expected to write $len bytes, but only wrote $written.");
-        }
+    if ($remaining) {
+        warn sprintf(
+            "Only streamed %d of %d bytes of file",
+            $total_written, $size
+        );
 
-        $actual_file_len += $real_len;
-        $total           += $written;
-    } while ( $actual_file_len < $size );
+        $padding += $remaining;
+    }
+    elsif ( !$fh->eof ) {
+        warn "File grew as we read it; truncated";
+    }
+
+    $handle->write( "\x00" x $padding, $padding );
 
     $fh->close;
 
-    return $total;
+    $total_written += $padding;
+
+    return $total_written;
 }
 
 sub _archive {
