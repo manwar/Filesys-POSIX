@@ -111,6 +111,18 @@ sub seek {
     );
 }
 
+=item C<$handle-E<gt>eof>
+
+Returns a boolean indicating whether the file handle has reached end-of-file.
+
+=cut
+
+sub eof {
+    my ($self) = @_;
+
+    return eof $$self;
+}
+
 =item C<$handle-E<gt>tell>
 
 Returns the current absolute byte position of the current file C<$handle>.
