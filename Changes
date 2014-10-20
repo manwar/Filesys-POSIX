@@ -1,3 +1,16 @@
+Version 0.9.16
+
+    * Finally get around to adding this lovely Changes file
+
+    * Refactor tar _write_file() method
+    
+      Refactor Filesys::POSIX::Userland::Tar->_write_file() method to ensure
+      the amount of data written for a file is indeed the amount committed to
+      in the archive member's header; if a file is shorter than indicated, then
+      sufficient padding is provided to compensate; and if a file grows longer
+      than promised, then the file output is truncated, and a warning is
+      emitted indicating as such.
+
 Version 0.9.15
 
     * Rename t/lib-Filesys-POSIX-Userland-Tar_race2.t to t/tar-race.t
