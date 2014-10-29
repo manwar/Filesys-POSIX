@@ -1,3 +1,7 @@
+Version 0.9.17
+
+    * Revert _write_file() refactor until further investigation is complete
+
 Version 0.9.16
 
     * Finally get around to adding this lovely Changes file
