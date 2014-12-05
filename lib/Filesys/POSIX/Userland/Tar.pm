@@ -220,8 +220,6 @@ following options are recognized uniquely by C<$fs-E<gt>tar()>:
 When set, certain GNU extensions to the tar output format are enabled, namely
 support for arbitrarily long filenames.
 
-=back
-
 =item C<ignore_missing>
 
 When set, ignore if a file is missing when writing it to the tarball.  This can
