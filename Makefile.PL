@@ -28,9 +28,11 @@ WriteMakefile(
     'META_MERGE' => {
         'meta-spec' => { 'version' => 2 },
         'resources' => {
-            'type' => 'git',
-            'url'  => 'git://github.com/xantronix/Filesys-POSIX.git',
-            'web'  => 'https://github.com/xantronix/Filesys-POSIX'
+            'repository' => {
+                'type' => 'git',
+                'url'  => 'git://github.com/xantronix/Filesys-POSIX.git',
+                'web'  => 'https://github.com/xantronix/Filesys-POSIX'
+            }
         }
     }
 );
