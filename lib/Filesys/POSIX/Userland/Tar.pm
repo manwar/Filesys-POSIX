@@ -168,33 +168,40 @@ sub _archive {
     }
 
     $blocks .= $header->encode;
-
     local $@;
 
     eval {
         # Acquire the file handle before writing the header so we don't corrupt
         # the tarball if the file is missing.
-        my $header_len = length $blocks;
+        my $fh;
 
+        if ( $inode->file && $header->{'size'} > 0 ) {
+            $fh = $inode->open( $O_RDONLY | $O_NONBLOCK );    # Case 82969: No block on pipes
+        }
+
+        # write header
+        my $header_len = length $blocks;
         unless ( $handle->write( $blocks, $header_len ) == $header_len ) {
             Carp::confess('Short write while dumping tar header to file handle');
         }
-
-        if ( $inode->file && $header->{'size'} > 0 ) {
-            my $fh = $inode->open( $O_RDONLY | $O_NONBLOCK );    # Case 82969: No block on pipes
-
-            $written += _write_file( $fh, $inode, $handle, $header->{'size'} );
-        }
-
         $written += $header_len;
+
+        # write file
+        $written += _write_file( $fh, $inode, $handle, $header->{'size'} ) if ($fh);
     };
 
     if ($!) {
-        if ( !$opts->{'ignore_missing'} || $! != &Errno::ENOENT ) {
+        if ( $! == &Errno::ENOENT && $opts->{'ignore_missing'} ) {
+            $opts->{'ignore_missing'}->($path)
+              if ref $opts->{'ignore_missing'} eq 'CODE';
+        }
+        elsif ( $! == &Errno::EACCES && $opts->{'ignore_inaccessible'} ) {
+            $opts->{'ignore_inaccessible'}->($path)
+              if ref $opts->{'ignore_inaccessible'} eq 'CODE';
+        }
+        else {
             die $@;
         }
-        $opts->{'ignore_missing'}->($path)
-          if ref $opts->{'ignore_missing'} eq 'CODE';
     }
 
     return $written;
@@ -226,6 +233,13 @@ When set, ignore if a file is missing when writing it to the tarball.  This can
 happen if a file is removed between the time the find functionality finds it and
 the time it is actually written to the output.  If the value is a coderef, calls
 that function with the name of the missing file.
+
+=item C<ignore_inaccessible>
+
+When set, ignore if a file is unreadable when writing it to the tarball.  This can
+happen if a file permissions do not allow the current UID and GID to read the file.
+If the value is a coderef, calls that function with the name of the inaccessible
+file.
 
 =back
 
@@ -276,6 +290,8 @@ Written by Xan Tronix <xan@cpan.org>
 =item Rikus Goodell <rikus.goodell@cpanel.net>
 
 =item Brian Carlson <brian.carlson@cpanel.net>
+
+=item John Lightsey <jd@cpanel.net>
 
 =back
 

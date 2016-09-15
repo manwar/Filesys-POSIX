@@ -24,7 +24,7 @@ use Filesys::POSIX::Error qw(throw);
 
 use Carp qw(confess);
 
-our $VERSION = '0.9.17';
+our $VERSION = '0.9.18';
 
 =head1 NAME
 
@@ -148,7 +148,7 @@ sub _find_inode {
         #
         # We've encountered an absolute path.  Start from the beginning.
         #
-        unless ($item) {
+        unless (length $item) {
             $dir = $self->{'root'};
             next;
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2014, cPanel, Inc.
+# Copyright (c) 2016, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
 #
@@ -97,7 +97,8 @@ sub child {
         $inode = Filesys::POSIX::Mem::Inode->new( %data, 'mode' => $mode );
     }
     else {
-        $inode = __PACKAGE__->from_disk( $path, %data );
+        my $class = ref $self;
+        $inode = $class->from_disk( $path, %data );
     }
 
     return $directory->set( $name, $inode );

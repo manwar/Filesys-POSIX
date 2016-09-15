@@ -1,4 +1,4 @@
-# Copyright (c) 2014, cPanel, Inc.
+# Copyright (c) 2016, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
 #
@@ -8,11 +8,12 @@
 use strict;
 use warnings;
 
-use Filesys::POSIX      ();
-use Filesys::POSIX::Mem ();
+use Filesys::POSIX       ();
+use Filesys::POSIX::Mem  ();
+use Filesys::POSIX::Real ();
 use Filesys::POSIX::Bits;
 
-use Test::More ( 'tests' => 30 );
+use Test::More ( 'tests' => 32 );
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Filesys::POSIX::Error;
@@ -145,6 +146,20 @@ foreach ( sort keys %$mounts ) {
     $fs->chdir('/');
 
     $fs->close($fd);
+}
+
+{
+    $fs->mkdir("real");
+    $fs->mkdir("real/0");
+    my $inode = eval { $fs->stat('real/0') };
+    ok($inode, 'Mkdir of real/0 succeeded');
+    diag($@) if $@;
+
+    $fs->mount( Filesys::POSIX::Real->new, 'real/0', path => '/' );
+    $inode = eval { $fs->stat('real/0/etc/passwd') };
+    ok( $inode, 'Mount at real/0 functions properly' );
+    diag($@) if $@;
+    $fs->unmount('real/0');
 }
 
 {

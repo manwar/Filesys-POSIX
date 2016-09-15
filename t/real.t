@@ -1,4 +1,4 @@
-# Copyright (c) 2014, cPanel, Inc.
+# Copyright (c) 2016, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
 #
@@ -11,11 +11,12 @@ use warnings;
 use Filesys::POSIX       ();
 use Filesys::POSIX::Real ();
 use Filesys::POSIX::Bits;
+use Filesys::POSIX::Extensions ();
 
 use File::Temp ();
 use Fcntl;
 
-use Test::More ( 'tests' => 11 );
+use Test::More ( 'tests' => 19 );
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Filesys::POSIX::Error;
@@ -73,3 +74,32 @@ lives_ok {
     $fs->rename( 'foo', 'bleh' );
 }
 "Filesys::POSIX->rename() allows renaming real files";
+
+$fs->alias( 'bar', 'baz' );
+
+my $bar_inode = $fs->stat('bar');
+my $baz_inode = $fs->stat('baz');
+
+is_deeply( $bar_inode, $baz_inode, 'Aliased inode is the same physical path' );
+ok( ( -e "$tmpdir/bar" ),  'Original real inode remains after aliasing' );
+ok( ( !-e "$tmpdir/baz" ), 'New real inode was not created by aliasing' );
+
+$fs->detach('bar');
+
+ok( ( -e "$tmpdir/bar" ), 'Original real inode remains after detaching' );
+dies_ok {
+    $fs->stat('bar');
+}
+'Stat on detached path dies';
+
+# list() was making detached names reappear previously
+my @directory_contents = $fs->stat('.')->directory()->list();
+
+ok((! grep { $_ eq 'bar' } @directory_contents), 'Detached name does not reappear from list() operation');
+
+dies_ok {
+    $fs->stat('bar');
+}
+'Stat on detached path dies after list()';
+
+ok((grep { $_ eq 'baz' } @directory_contents), 'Aliased name remains after list() operation');
