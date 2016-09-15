@@ -16,7 +16,7 @@ use Filesys::POSIX::Bits;
 
 use File::Temp ();
 
-use Test::More ( 'tests' => 11 );
+use Test::More ( 'tests' => 13 );
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Filesys::POSIX::Error;
@@ -82,6 +82,14 @@ my $inode = $fs->stat('/bin/sh');
         $fs->alias( '/bin/sh', '/mnt/mem/bin/bash' );
     }
     &Errno::EEXIST, "Filesys::POSIX->alias() will complain when destination exists";
+
+    $fs->symlink( '/mnt/mem/bin/missing', '/mnt/mem/bin/missingsymlink' );
+    $fs->alias( '/mnt/mem/bin/missingsymlink', '/mnt/mem/bin/missingsymlinkalias' );
+    ok( $fs->lstat('/mnt/mem/bin/missingsymlinkalias'), 'Alias to dangling symlink created' );
+    throws_errno_ok {
+        $fs->stat('/mnt/mem/bin/missingsymlinkalias');
+    }
+    &Errno::ENOENT, "Symlink is still dangling after alias";
 }
 
 #

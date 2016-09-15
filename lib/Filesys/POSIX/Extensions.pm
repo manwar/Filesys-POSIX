@@ -148,7 +148,7 @@ sub alias {
     my ( $self, $src, $dest ) = @_;
     my $hier      = Filesys::POSIX::Path->new($dest);
     my $name      = $hier->basename;
-    my $inode     = $self->stat($src);
+    my $inode     = $self->lstat($src);
     my $parent    = $self->stat( $hier->dirname );
     my $directory = $parent->directory;
 

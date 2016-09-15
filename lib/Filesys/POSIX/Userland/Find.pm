@@ -14,6 +14,8 @@ use Filesys::POSIX::Bits;
 use Filesys::POSIX::Module ();
 use Filesys::POSIX::Path   ();
 
+use Errno;
+
 my @METHODS = qw(find);
 
 Filesys::POSIX::Module->export_methods( __PACKAGE__, @METHODS );
@@ -73,9 +75,39 @@ HASH, the following flags (whose values are set nonzero) are honored:
 Any symlinks found along the way are resolved; if the paths they resolve to are
 those of directories, then further descent will be made into said directories.
 
-=back
+=item C<recursion_mode>
+
+Specifies the strategy to use when recursing through directories. Available
+options are:
+
+=over
+
+=item breadth
+
+Traverse in a breadth-first manner. This is the default mode.
+
+=item depth
+
+Traverse in a depth-first manner.
+
+=item device
+
+Traverse inodes that are on the same device first. This mode also tracks the
+current filesystem it is processing and invokes the C<$fs-E<gt>enter_filesystem>
+and C<$fs-E<gt>exit_filesystem> methods when the current filesystem changes to
+optimize these calls.
 
 =back
+
+=item C<ignore_missing>
+
+When set, ignore if a file or directory becomes missing during recursion. If the
+value is a coderef, calls that function with the name of the missing file.
+
+=item C<ignore_inaccessible>
+
+When set, ignore if a file or directory becomes unreadable during recursion. If
+the value is a coderef, calls that function with the name of the inaccessible file.
 
 =cut
 
@@ -85,28 +117,78 @@ sub find {
     my %opts     = ref $_[0] eq 'HASH' ? %{ (shift) } : ();
     my @args     = @_;
 
-    my @paths  = map { Filesys::POSIX::Path->new($_) } @args;
-    my @inodes = map { $self->lstat($_) } @args;
+    my @paths = map { Filesys::POSIX::Path->new($_) } @args;
+    my @inodes = map { $opts{'follow'} ? $self->stat($_) : $self->lstat($_) } @args;
+
+    my $recursion_mode = defined $opts{'recursion_mode'} ? $opts{'recursion_mode'} : 'breadth';
+    if ( $recursion_mode ne 'breadth' && $recursion_mode ne 'depth' && $recursion_mode ne 'device' ) {
+        die "Invalid recursion mode $recursion_mode specified";
+    }
+
+    my $current_dev;
 
     while ( my $inode = pop @inodes ) {
         my $path = pop @paths;
 
-        if ( $inode->link ) {
-            $inode = $self->stat( $inode->readlink ) if $opts{'follow'};
+        if ( $recursion_mode eq 'device' && ( !defined $current_dev || $current_dev != $inode->{'dev'} ) ) {
+            if ( defined $current_dev && $current_dev->can('exit_filesystem') ) {
+                $current_dev->exit_filesystem();
+            }
+            if ( defined $inode->{'dev'} && $inode->{'dev'}->can('enter_filesystem') ) {
+                $inode->{'dev'}->enter_filesystem();
+            }
+            $current_dev = $inode->{'dev'};
         }
 
         $callback->( $path, $inode );
 
         if ( $inode->dir ) {
-            my $directory = $inode->directory->open;
-
-            while ( defined( my $item = $directory->read ) ) {
-                next if $item eq '.' || $item eq '..';
-                push @paths,  Filesys::POSIX::Path->new( $path->full . "/$item" );
-                push @inodes, $self->{'vfs'}->vnode( $directory->get($item) );
+            my $directory;
+            eval { $directory = $inode->directory->open; };
+            if ($@) {
+                if ( $! == &Errno::ENOENT && $opts{'ignore_missing'} ) {
+                    $opts{'ignore_missing'}->( $path->full() )
+                      if ref $opts{'ignore_missing'} eq 'CODE';
+                }
+                elsif ( $! == &Errno::EACCES && $opts{'ignore_inaccessible'} ) {
+                    $opts{'ignore_inaccessible'}->( $path->full() )
+                      if ref $opts{'ignore_inaccessible'} eq 'CODE';
+                }
+                else {
+                    die $@;
+                }
             }
 
-            $directory->close;
+            if ( defined $directory ) {
+                while ( defined( my $item = $directory->read ) ) {
+                    next if $item eq '.' || $item eq '..';
+                    my $subpath = Filesys::POSIX::Path->new( $path->full . "/$item" );
+                    my $subnode = $self->{'vfs'}->vnode( $directory->get($item) );
+
+                    if ( $opts{'follow'} && defined $subnode && $subnode->link ) {
+                        $subnode = $self->stat( $subnode->readlink );
+                    }
+
+                    if ( !defined $subnode ) {
+                        if ( $opts{'ignore_inaccessible'} ) {
+                            $opts{'ignore_inaccessible'}->( $path->full() . "/$item" )
+                              if ref $opts{'ignore_inaccessible'} eq 'CODE';
+                        }
+                        else {
+                            die "Failed to read " . $path->full() . "/$item";
+                        }
+                    }
+                    elsif ( $recursion_mode eq 'depth' || ( $recursion_mode eq 'device' && $current_dev == $subnode->{'dev'} ) ) {
+                        push @paths,  $subpath;
+                        push @inodes, $subnode;
+                    }
+                    else {
+                        unshift @paths,  $subpath;
+                        unshift @inodes, $subnode;
+                    }
+                }
+                $directory->close;
+            }
         }
     }
 }
@@ -126,6 +208,8 @@ Written by Xan Tronix <xan@cpan.org>
 =item Rikus Goodell <rikus.goodell@cpanel.net>
 
 =item Brian Carlson <brian.carlson@cpanel.net>
+
+=item John Lightsey <jd@cpanel.net>
 
 =back
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2014, cPanel, Inc.
+# Copyright (c) 2016, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
 #
@@ -25,9 +25,10 @@ sub new {
         'inode'    => $inode,
         'mtime'    => 0,
         'overlays' => {},
+        'detached' => {},
         'skipped'  => {},
         'members'  => {
-            '.'  => $inode,
+            '.' => $inode,
             '..' => $inode->{'parent'} ? $inode->{'parent'} : $inode
         }
     }, $class;
@@ -41,7 +42,8 @@ sub _sync_all {
 
     $self->open;
 
-    while ( defined( my $item = $self->read ) ) {
+    # This uses readdir to bypass the aliased/detached overlays
+    while ( my $item = readdir $self->{'dh'} ) {
         $self->_sync_member($item);
     }
 
@@ -60,7 +62,7 @@ sub _sync_member {
         return;
     }
 
-    Carp::confess($!) unless @st;
+    Carp::confess("$!") unless @st;
 
     if ( exists $self->{'members'}->{$name} ) {
         $self->{'members'}->{$name}->update(@st);
@@ -77,7 +79,9 @@ sub _sync_member {
 
 sub get {
     my ( $self, $name ) = @_;
-    return $self->{'overlays'}->{$name} if exists $self->{'overlays'}->{$name};
+    return undef if ( exists $self->{'detached'}->{$name} );
+
+    return $self->{'overlays'}->{$name} if ( exists $self->{'overlays'}->{$name} );
 
     $self->_sync_member($name) unless exists $self->{'members'}->{$name};
     return $self->{'members'}->{$name};
@@ -85,12 +89,15 @@ sub get {
 
 sub set {
     my ( $self, $name, $inode ) = @_;
+    delete $self->{'detached'}->{$name};
     $self->{'overlays'}->{$name} = $inode;
     return $inode;
 }
 
 sub rename_member {
     my ( $self, undef, $olddir, $oldname, $newname ) = @_;
+
+    # TODO: This operation has no awareness of aliasing and detaching
     return rename( $olddir->path . '/' . $oldname, $self->path . '/' . $newname )
       && do {
         $olddir->_sync_member($oldname);
@@ -101,7 +108,8 @@ sub rename_member {
 
 sub exists {
     my ( $self, $name ) = @_;
-    return 1 if exists $self->{'overlays'}->{$name};
+    return '' if exists $self->{'detached'}->{$name};
+    return 1  if exists $self->{'overlays'}->{$name};
 
     $self->_sync_member($name);
     return exists $self->{'members'}->{$name};
@@ -110,10 +118,12 @@ sub exists {
 sub delete {
     my ( $self, $name ) = @_;
 
+    if ( exists $self->{'detached'}->{$name} ) {
+        return delete $self->{'detached'}->{$name};
+    }
+
     if ( exists $self->{'overlays'}->{$name} ) {
-        my $inode = $self->{'overlays'}->{$name};
-        delete $self->{'overlays'}->{$name};
-        return $inode;
+        return delete $self->{'overlays'}->{$name};
     }
 
     my $member = $self->{'members'}->{$name} or return;
@@ -127,7 +137,7 @@ sub delete {
     }
 
     if ($!) {
-        Carp::confess($!) unless $!{'ENOENT'};
+        Carp::confess("$!") unless $!{'ENOENT'};
     }
 
     my $now = time;
@@ -142,12 +152,14 @@ sub delete {
 sub detach {
     my ( $self, $name ) = @_;
 
-    foreach my $table (qw(overlays members)) {
+    return undef if ( exists $self->{'detached'}->{$name} );
+
+    $self->{'detached'}->{$name} = undef;
+
+    foreach my $table (qw(members overlays)) {
         next unless exists $self->{$table}->{$name};
 
-        my $inode = $self->{$table}->{$name};
-        delete $self->{$table}->{$name};
-        return $inode;
+        return $self->{$table}->{$name};
     }
 }
 
@@ -156,6 +168,8 @@ sub list {
     $self->_sync_all;
 
     my %union = ( %{ $self->{'members'} }, %{ $self->{'overlays'} } );
+
+    delete @union{ keys %{ $self->{'detached'} } };
 
     return keys %union;
 }
@@ -194,16 +208,18 @@ sub read {
     my ($self) = @_;
     my $item;
 
-    if ( $self->{'dh'} ) {
-        $item = readdir $self->{'dh'};
-    }
+    do {
+        if ( $self->{'dh'} ) {
+            $item = readdir $self->{'dh'};
+        }
 
-    if ( defined $item ) {
-        delete $self->{'skipped'}->{$item};
-    }
-    else {
-        $item = each %{ $self->{'skipped'} };
-    }
+        if ( defined $item ) {
+            delete $self->{'skipped'}->{$item};
+        }
+        else {
+            $item = each %{ $self->{'skipped'} };
+        }
+    } while ( $item && $self->{'detached'}->{$item} );
 
     if (wantarray) {
         return ( $item, $self->get($item) );

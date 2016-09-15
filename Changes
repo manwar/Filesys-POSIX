@@ -1,3 +1,13 @@
+Version 0.9.18
+
+    * Fix spurious tar file header emitted for unreadable files.
+    * Add 'ignore_inaccessible' option to tar() method.
+    * Add ReducedPrivileges filesystem.
+    * Add 'recursion_mode' option to find() method.
+    * Fix handling of 'detached' inodes in Real directories.
+    * Fix handling of inodes named '0'
+    * Make alias() copy symlinks instead of the symlink targets.
+
 Version 0.9.17
 
     * Revert _write_file() refactor until further investigation is complete
