@@ -25,6 +25,10 @@ WriteMakefile(
         'Try::Tiny'        => 0
     },
 
+    'TEST_REQUIRES' => {
+        'autodie' => 0
+    },
+
     'META_MERGE' => {
         'meta-spec' => { 'version' => 2 },
         'resources' => {
