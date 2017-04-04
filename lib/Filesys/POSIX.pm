@@ -24,7 +24,7 @@ use Filesys::POSIX::Error qw(throw);
 
 use Carp qw(confess);
 
-our $VERSION = '0.9.18';
+our $VERSION = '0.9.19';
 
 =head1 NAME
 

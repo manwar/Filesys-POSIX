@@ -1,3 +1,7 @@
+Version 0.9.19
+
+    * When reading a directory, do not process detached inodes
+
 Version 0.9.18
 
     * Fix spurious tar file header emitted for unreadable files.
