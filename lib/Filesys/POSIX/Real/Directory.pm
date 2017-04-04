@@ -219,7 +219,7 @@ sub read {
         else {
             $item = each %{ $self->{'skipped'} };
         }
-    } while ( $item && $self->{'detached'}->{$item} );
+    } while ( $item && exists $self->{'detached'}->{$item} );
 
     if (wantarray) {
         return ( $item, $self->get($item) );
