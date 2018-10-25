@@ -50,7 +50,7 @@ hierarchies.
 
 =head1 USAGE
 
-=over
+=over 4
 
 =item C<$fs-E<gt>find($callback, @paths)>
 
@@ -68,7 +68,7 @@ need to perform a C<$fs-E<gt>stat> call to further inspect the item.
 When called with an C<$options> argument, specified in the form of an anonymous
 HASH, the following flags (whose values are set nonzero) are honored:
 
-=over
+=over 4
 
 =item C<follow>
 
@@ -80,7 +80,7 @@ those of directories, then further descent will be made into said directories.
 Specifies the strategy to use when recursing through directories. Available
 options are:
 
-=over
+=over 4
 
 =item breadth
 
@@ -108,6 +108,8 @@ value is a coderef, calls that function with the name of the missing file.
 
 When set, ignore if a file or directory becomes unreadable during recursion. If
 the value is a coderef, calls that function with the name of the inaccessible file.
+
+=back
 
 =cut
 
@@ -197,13 +199,15 @@ sub find {
 
 __END__
 
+=back
+
 =head1 AUTHOR
 
 Written by Xan Tronix <xan@cpan.org>
 
 =head1 CONTRIBUTORS
 
-=over
+=over 4
 
 =item Rikus Goodell <rikus.goodell@cpanel.net>
 
